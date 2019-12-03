@@ -1,0 +1,84 @@
+syntax = "proto3";
+
+package ousystems;
+
+service Gallager {
+  rpc Begin (BeginRequest) returns (MsgAck) {}
+  
+}
+
+message BeginRequest {
+  // Node name that is receiving the message
+  string nodename = 1;
+
+  // Neighbors of the nodes
+  repeated int32 neighbors = 2;
+
+  // Weights of links corresponding to neighbors
+  repeated int32 weights = 3;
+}
+
+message MsgAck {
+  int32 status = 1;
+  string src = 2;
+  string dst = 3;
+}
+
+service Messaging {
+
+  rpc WakeUp (WakeUpMSG) returns (Empty) {}
+
+  rpc Connect (ConnectMSG) returns (Empty) {}
+
+  rpc Initiate (InitiateMSG) returns (Empty) {}
+
+  rpc Test (TestMSG) returns (Empty) {} 
+
+  rpc AcceptReject (AcceptRejectMSG) returns (Empty) {}
+
+  rpc Report (ReportMSG) returns (Empty) {}
+
+  rpc ChangeCore (ChangeCoreMSG) returns (Empty) {}
+
+}
+
+message WakeUpMSG {
+  int32 nullMSG = 1;
+}
+
+message ConnectMSG {
+  string nodename = 1;
+  int32 fragmentLevel = 2;
+}
+
+message InitiateMSG {
+  string nodename = 1;
+  int32 fragmentLevel = 2;
+  int32 fragmentID = 3;
+  int32 state = 4;
+}
+
+message TestMSG {
+  string nodename = 1;
+  int32 fragmentLevel = 2;
+  int32 fragmentID =3;
+}
+
+message AcceptRejectMSG {
+  string nodename = 1;
+  int32 AorR = 2;
+}
+
+message ReportMSG {
+  string nodename = 1;
+  int32 weight = 2;
+}
+
+message ChangeCoreMSG {
+  string nodename = 1;
+}
+
+message Empty {
+  
+}
+
