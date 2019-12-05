@@ -41,5 +41,7 @@ example output:
 coordinator | BranchDict = {0: ['1', '5'], 1: ['0'], 2: ['3'], 3: ['4', '2'], 4: ['5', '3'], 5: ['4', '0']}
 ```
 
+![Final Tree](https://oudalab.github.io/cs5113fa19/projects/p6.png)
+
 ## Collaborators
 A file will be found in the project directory that will list all the resources and collaboration used. 
