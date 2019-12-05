@@ -4,6 +4,8 @@ package ousystems;
 
 service Gallager {
   rpc Begin (BeginRequest) returns (MsgAck) {}
+
+  rpc Finished (FinishedMSG) returns (Empty) {}
   
 }
 
@@ -18,10 +20,18 @@ message BeginRequest {
   repeated int32 weights = 3;
 }
 
+message FinishedMSG {
+  int32 finish = 1;
+}
+
 message MsgAck {
   int32 status = 1;
   string src = 2;
   string dst = 3;
+}
+
+message Empty {
+  
 }
 
 service Messaging {
@@ -39,6 +49,8 @@ service Messaging {
   rpc Report (ReportMSG) returns (Empty) {}
 
   rpc ChangeCore (ChangeCoreMSG) returns (Empty) {}
+
+  rpc Branches (BranchesMSG) returns (Empty) {}
 
 }
 
@@ -72,13 +84,15 @@ message AcceptRejectMSG {
 message ReportMSG {
   string nodename = 1;
   int32 weight = 2;
+  repeated int32 edge = 3;
 }
 
 message ChangeCoreMSG {
   string nodename = 1;
 }
 
-message Empty {
-  
+message BranchesMSG {
+  string nodename = 1;
+  repeated string branches= 2;
 }
 

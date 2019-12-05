@@ -1,0 +1,116 @@
+Test Case 1 output. Had to change some of the weights as when I designed the testcase I didn't realize that the weights needed to be unique.
+
+Successfully built eeb4d4f62590
+Successfully tagged osproject_node5:latest
+Recreating node4       ... done                                                                                                                              Recreating node1       ... done                                                                                                                              Recreating node0       ... done                                                                                                                              Recreating node2       ... done                                                                                                                              Recreating node3       ... done                                                                                                                              Recreating node5       ... done                                                                                                                              Recreating coordinator ... done                                                                                                                              Attaching to node4, node2, node5, coordinator, node1, node0, node3
+node4     | INFO:root:Starting node4...
+node4     | INFO:root:node4...
+node2     | INFO:root:Starting node2...
+node2     | INFO:root:node2...
+node5     | INFO:root:Starting node5...
+node5     | INFO:root:node5...
+coordinator | INFO:root:Starting coordinator...
+node1     | INFO:root:Starting node1...
+node1     | INFO:root:node1...
+node3     | INFO:root:Starting node3...
+node3     | INFO:root:node3...
+node0     | INFO:root:Starting node0...
+node0     | INFO:root:node0...
+node4     | {'node4': [(0, 2), (2, 6), (5, 7)]}
+node2     | {'node2': [(0, 4), (1, 5), (4, 6)]}
+node5     | {'node5': [(3, 1), (4, 7)]}
+node1     | {'node1': [(2, 5), (3, 3)]}
+node0     | {'node0': [(2, 4), (4, 2)]}
+node3     | {'node3': [(1, 3), (5, 1)]}
+node3     | node3 is waking up!
+node5     | node5 is waking up!
+node5     | recieved Connect from node3 with fragmentLevel = 0
+node3     | recieved Connect from node5 with fragmentLevel = 0
+node5     | recieved Initiate from node3 with fragmentLevel = 1, fragmentID = 1, and state = 1
+node3     | recieved Initiate from node5 with fragmentLevel = 1, fragmentID = 1, and state = 1
+node4     | node4 is waking up!
+node4     | recieved Test from node5 with fragmentLevel = 1, and fragmentID = 1
+node1     | node1 is waking up!
+node1     | recieved Test from node3 with fragmentLevel = 1, and fragmentID = 1
+node0     | node0 is waking up!
+node0     | recieved Connect from node4 with fragmentLevel = 0
+node3     | recieved Connect from node1 with fragmentLevel = 0
+node4     | recieved Test from node5 with fragmentLevel = 1, and fragmentID = 1
+node1     | recieved Test from node3 with fragmentLevel = 1, and fragmentID = 1
+node4     | recieved Connect from node0 with fragmentLevel = 0
+node1     | recieved Initiate from node3 with fragmentLevel = 1, fragmentID = 1, and state = 1
+node0     | recieved Initiate from node4 with fragmentLevel = 1, fragmentID = 2, and state = 1
+node4     | recieved Initiate from node0 with fragmentLevel = 1, fragmentID = 2, and state = 1
+node2     | node2 is waking up!
+node2     | recieved Test from node1 with fragmentLevel = 1, and fragmentID = 1
+node1     | recieved Test from node3 with fragmentLevel = 1, and fragmentID = 1
+node0     | recieved Connect from node2 with fragmentLevel = 0
+node3     | recieved AcceptReject from node1 with AorR = 1
+node4     | recieved Test from node5 with fragmentLevel = 1, and fragmentID = 1
+node2     | recieved Test from node0 with fragmentLevel = 1, and fragmentID = 2
+node5     | recieved AcceptReject from node4 with AorR = 0
+node3     | recieved Report from node5 with weight = 7
+node2     | recieved Test from node4 with fragmentLevel = 1, and fragmentID = 2
+node5     | recieved Report from node3 with weight = 7
+node1     | recieved Report from node3 with weight = 7
+node4     | recieved Connect from node5 with fragmentLevel = 1
+node2     | recieved Test from node1 with fragmentLevel = 1, and fragmentID = 1
+node4     | recieved Connect from node5 with fragmentLevel = 1
+node2     | recieved Initiate from node0 with fragmentLevel = 1, fragmentID = 2, and state = 1
+node1     | recieved Test from node2 with fragmentLevel = 1, and fragmentID = 2
+node4     | recieved Connect from node5 with fragmentLevel = 1
+node2     | recieved Test from node0 with fragmentLevel = 1, and fragmentID = 2
+node0     | recieved AcceptReject from node2 with AorR = 1
+node4     | recieved Connect from node5 with fragmentLevel = 1
+node2     | recieved Test from node4 with fragmentLevel = 1, and fragmentID = 2
+node4     | recieved Connect from node5 with fragmentLevel = 1
+node2     | recieved Test from node1 with fragmentLevel = 1, and fragmentID = 1
+node1     | recieved AcceptReject from node2 with AorR = 0
+node3     | recieved Report from node1 with weight = 5
+node4     | recieved AcceptReject from node2 with AorR = 1
+node2     | recieved AcceptReject from node1 with AorR = 0
+node5     | recieved Test from node4 with fragmentLevel = 1, and fragmentID = 2
+node0     | recieved Report from node2 with weight = 5
+node4     | recieved Connect from node5 with fragmentLevel = 1
+node2     | recieved Report from node0 with weight = 5
+node1     | recieved Connect from node2 with fragmentLevel = 1
+node4     | recieved AcceptReject from node5 with AorR = 0
+node1     | recieved Connect from node2 with fragmentLevel = 1
+node0     | recieved Report from node4 with weight = 7
+node4     | recieved Report from node0 with weight = 5
+node2     | recieved ChangeCore from node0
+node1     | recieved Connect from node2 with fragmentLevel = 1
+node0     | recieved Report from node4 with weight = 5
+node4     | recieved Connect from node5 with fragmentLevel = 1
+node2     | recieved ChangeCore from node0
+node1     | recieved ChangeCore from node2
+node4     | recieved Connect from node5 with fragmentLevel = 1
+node2     | recieved Connect from node1 with fragmentLevel = 1
+node1     | recieved Connect from node2 with fragmentLevel = 1
+node4     | recieved Connect from node5 with fragmentLevel = 1
+node2     | recieved Initiate from node1 with fragmentLevel = 2, fragmentID = 5, and state = 1
+coordinator | BranchDict = {0: ['4', '2'], 1: ['3'], 2: ['0', '1'], 3: ['5', '1'], 4: ['0'], 5: ['3']}
+coordinator | sending finish message to node0
+node0     | recieved finish message
+coordinator | sending finish message to node1
+node1     | recieved finish message
+coordinator | sending finish message to node2
+node2     | recieved finish message
+coordinator | sending finish message to node3
+node3     | recieved finish message
+coordinator | sending finish message to node4
+node4     | recieved finish message
+coordinator | sending finish message to node5
+node5     | recieved finish message
+node2     | Finished!
+node1     | Finished!
+node0     | recieved Initiate from node2 with fragmentLevel = 2, fragmentID = 5, and state = 1
+node3     | Finished!
+node4     | Finished!
+node2 exited with code 0
+coordinator exited with code 0
+node1 exited with code 0
+node5     | Finished!
+node3 exited with code 0
+node4 exited with code 0
+node5 exited with code 0

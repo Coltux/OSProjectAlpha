@@ -28,6 +28,8 @@ neighbor = []
 
 SE = {}
 
+BranchDict = {}
+
 numOfNodes = 0
 
 SLEEPING = 0
@@ -51,11 +53,13 @@ fragmentID = int
 state = int
 findCount = int
 waiting_to_connect_to = int
-in_branch= tuple()
+in_branch= []
 best_edge = tuple()
 best_wt = int
 test_edge = tuple
+report_edge = []
 
+server = grpc.server(ThreadPoolExecutor(max_workers=100))
 finished = False
 
 class SleepingPolicy(metaclass=abc.ABCMeta):
@@ -140,7 +144,7 @@ def WakeUpIfNeeded():
     global waiting_to_connect_to
     global fragmentLevel
 
-    if state == SLEEPING:
+    if (state == SLEEPING):
             print(socket.gethostname() + " is waking up!")
             # todo: call a function that finds min-wt BASIC node instead..
             minedge = FindMinBasicEdge()
@@ -154,30 +158,44 @@ def WakeUpIfNeeded():
                     interceptors = (RetryOnRpcErrorClientInterceptor(max_attempts=100, sleeping_policy=ExponentialBackoff(init_backoff_ms=100, max_backoff_ms=1600, multiplier=2), status_for_retry=(grpc.StatusCode.UNAVAILABLE,),),)
                     intercept_channel = grpc.intercept_channel(channel, *interceptors)
                     stub = GHS_pb2_grpc.MessagingStub(intercept_channel)
-                    if(socket.gethostname() == 'node3'):
-                        print ("sending Connect to node" +  str(minedge[0]))
                     Connect = GHS_pb2.ConnectMSG(nodename= socket.gethostname(), fragmentLevel= fragmentLevel)
-                    r = stub.Connect(Connect)
+                    stub.Connect(Connect)
                 SE[minedge[0]] = BRANCH
                 waiting_to_connect_to = minedge[0]
 
-def ReportProc():
+def ReportProc(request):
     global findCount
     global test_edge
     global state
     global FOUND
     global best_wt
+    global in_branch
+    global neighbor
+    global report_edge
+    global INFINITY
+    global edges
 
+    node = request.nodename
     if ( (findCount == 0) and (test_edge == None) ):
         state == FOUND
-        with grpc.insecure_channel(in_branch[1] + ':50050') as channel:
-                    interceptors = (RetryOnRpcErrorClientInterceptor(max_attempts=100, sleeping_policy=ExponentialBackoff(init_backoff_ms=100, max_backoff_ms=1600, multiplier=2), status_for_retry=(grpc.StatusCode.UNAVAILABLE,),),)
-                    intercept_channel = grpc.intercept_channel(channel, *interceptors)
-                    stub = GHS_pb2_grpc.MessagingStub(intercept_channel)
-                    Report = GHS_pb2.ReportMSG(nodename = socket.gethostname(), weight = best_wt)
-                    r = stub.Report(Report)
+        for x in in_branch:
+            if int(x) in neighbor:
 
-def TestProc():
+                edge = [ int( socket.gethostname()[4:] ), int( node[4:] )]
+                for y in edges[socket.gethostname()]:
+                    if ( y[0] == int(node[4:]) ):
+                        weightOfNode = y[1]
+                        if ( ( weightOfNode == best_wt ) or (best_wt == INFINITY) ):
+                            report_edge = edge
+
+                with grpc.insecure_channel('node' + str(x) + ':50050') as channel:
+                            interceptors = (RetryOnRpcErrorClientInterceptor(max_attempts=100, sleeping_policy=ExponentialBackoff(init_backoff_ms=100, max_backoff_ms=1600, multiplier=2), status_for_retry=(grpc.StatusCode.UNAVAILABLE,),),)
+                            intercept_channel = grpc.intercept_channel(channel, *interceptors)
+                            stub = GHS_pb2_grpc.MessagingStub(intercept_channel)
+                            Report = GHS_pb2.ReportMSG(nodename = socket.gethostname(), weight = best_wt, edge = report_edge)
+                            stub.Report(Report)
+
+def TestProc(request):
     global SE
     global BASIC
     global test_edge
@@ -197,10 +215,10 @@ def TestProc():
                     intercept_channel = grpc.intercept_channel(channel, *interceptors)
                     stub = GHS_pb2_grpc.MessagingStub(intercept_channel)
                     Test = GHS_pb2.TestMSG(nodename = socket.gethostname(), fragmentLevel = fragmentLevel, fragmentID = fragmentID)
-                    r = stub.Test(Test)
+                    stub.Test(Test)
     else:
         test_edge = None
-        ReportProc()
+        ReportProc(request)
 
 def ChangeCoreProc():
     global SE
@@ -209,22 +227,24 @@ def ChangeCoreProc():
     global fragmentLevel
     global waiting_to_connect_to
 
-    if ( SE[ int( best_edge[1][4:] ) ] == BRANCH ):
-        with grpc.insecure_channel(best_edge[1] + ':50050') as channel:
-                interceptors = (RetryOnRpcErrorClientInterceptor(max_attempts=100, sleeping_policy=ExponentialBackoff(init_backoff_ms=100, max_backoff_ms=1600, multiplier=2), status_for_retry=(grpc.StatusCode.UNAVAILABLE,),),)
-                intercept_channel = grpc.intercept_channel(channel, *interceptors)
-                stub = GHS_pb2_grpc.MessagingStub(intercept_channel)
-                changeCore = GHS_pb2.ChangeCoreMSG(nodename= socket.gethostname())
-                r = stub.ChangeCore(changeCore)
-    else:
-        with grpc.insecure_channel(best_edge[1] + ':50050') as channel:
-                    waiting_to_connect_to = best_edge[1]
+    if (fragmentLevel > 0):
+
+        if ( SE[ int( best_edge[1][4:] ) ] == BRANCH ):
+            with grpc.insecure_channel(best_edge[1] + ':50050') as channel:
                     interceptors = (RetryOnRpcErrorClientInterceptor(max_attempts=100, sleeping_policy=ExponentialBackoff(init_backoff_ms=100, max_backoff_ms=1600, multiplier=2), status_for_retry=(grpc.StatusCode.UNAVAILABLE,),),)
                     intercept_channel = grpc.intercept_channel(channel, *interceptors)
                     stub = GHS_pb2_grpc.MessagingStub(intercept_channel)
-                    Connect = GHS_pb2.ConnectMSG(nodename= socket.gethostname(), fragmentLevel= fragmentLevel)
-                    r = stub.Connect(Connect)
-        SE[ int( best_edge[1][4:] ) ] = BRANCH
+                    changeCore = GHS_pb2.ChangeCoreMSG(nodename= socket.gethostname())
+                    stub.ChangeCore(changeCore)
+        else:
+            with grpc.insecure_channel(best_edge[1] + ':50050') as channel:
+                        waiting_to_connect_to = best_edge[1]
+                        interceptors = (RetryOnRpcErrorClientInterceptor(max_attempts=100, sleeping_policy=ExponentialBackoff(init_backoff_ms=100, max_backoff_ms=1600, multiplier=2), status_for_retry=(grpc.StatusCode.UNAVAILABLE,),),)
+                        intercept_channel = grpc.intercept_channel(channel, *interceptors)
+                        stub = GHS_pb2_grpc.MessagingStub(intercept_channel)
+                        Connect = GHS_pb2.ConnectMSG(nodename= socket.gethostname(), fragmentLevel= fragmentLevel)
+                        stub.Connect(Connect)
+            SE[ int( best_edge[1][4:] ) ] = BRANCH
 
 
 class NodeMessages(GHS_pb2_grpc.MessagingServicer):
@@ -284,6 +304,45 @@ class NodeMessages(GHS_pb2_grpc.MessagingServicer):
 
         return GHS_pb2.Empty()
 
+    def Branches(self, request, context):
+        global BranchDict
+        global numOfNodes
+        global finished
+        node = request.nodename
+        branches =  request.branches
+        BranchDict[int(node[4:])] = branches
+        everyNodeHasBranch = True
+        nodeList = []
+        for x in BranchDict:
+            nodeList.append(x)
+            if (BranchDict[x] == None):
+                everyNodeHasBranch = False
+        if everyNodeHasBranch:
+            templist = []
+            templist.append(0)
+            branchStack = deque()
+            branchStack.append(0)
+            while branchStack:
+                for x in BranchDict[branchStack[0]]:
+                    if (int(x) not in templist):
+                        templist.append(int(x))
+                        branchStack.append(int(x))
+                branchStack.popleft()
+            templist.sort()
+            if (templist == nodeList):
+                print('BranchDict = ' + str(BranchDict))
+                for x in range(0, numOfNodes):
+                    with grpc.insecure_channel('node' + str(x) + ':50050') as channel:
+                        print('sending finish message to node' + str(x))
+                        interceptors = (RetryOnRpcErrorClientInterceptor(max_attempts=100, sleeping_policy=ExponentialBackoff(init_backoff_ms=100, max_backoff_ms=1600, multiplier=2), status_for_retry=(grpc.StatusCode.UNAVAILABLE,),),)
+                        intercept_channel = grpc.intercept_channel(channel, *interceptors)
+                        stub = GHS_pb2_grpc.GallagerStub(intercept_channel)
+                        message = GHS_pb2.FinishedMSG(finish = 1)
+                        stub.Finished(message)
+                finished = True
+
+        return GHS_pb2.Empty()
+
 def ExecWakeup(request):
     WakeUpIfNeeded()
     return GHS_pb2.Empty()
@@ -299,6 +358,7 @@ def ExecConnect(request):
     global BASIC
     global MsgQueue
     global waiting_to_connect_to
+    global in_branch
 
     WakeUpIfNeeded()
 
@@ -309,16 +369,19 @@ def ExecConnect(request):
 
     if (level < fragmentLevel):
         SE[int(node[4:])] = BRANCH
-        print('joined ' + node)
-        print('fragmentLevel = ' + str(fragmentLevel))
-        print('fragmentID = ' + str(fragmentID))
-        print('state = ' + str(state))
+        in_branch.append(node[4:])
+        with grpc.insecure_channel('coordinator:50050') as channel:
+            interceptors = (RetryOnRpcErrorClientInterceptor(max_attempts=100, sleeping_policy=ExponentialBackoff(init_backoff_ms=100, max_backoff_ms=1600, multiplier=2), status_for_retry=(grpc.StatusCode.UNAVAILABLE,),),)
+            intercept_channel = grpc.intercept_channel(channel, *interceptors)
+            stub = GHS_pb2_grpc.MessagingStub(intercept_channel)
+            branchMSG = GHS_pb2.BranchesMSG(nodename= socket.gethostname(), branches = in_branch)
+            stub.Branches(branchMSG)
         with grpc.insecure_channel(node + ':50050') as channel:
             interceptors = (RetryOnRpcErrorClientInterceptor(max_attempts=100, sleeping_policy=ExponentialBackoff(init_backoff_ms=100, max_backoff_ms=1600, multiplier=2), status_for_retry=(grpc.StatusCode.UNAVAILABLE,),),)
             intercept_channel = grpc.intercept_channel(channel, *interceptors)
             stub = GHS_pb2_grpc.MessagingStub(intercept_channel)
             init = GHS_pb2.InitiateMSG(nodename= socket.gethostname(), fragmentLevel= fragmentLevel, fragmentID = fragmentID, state= state)
-            r = stub.Initiate(init)
+            stub.Initiate(init)
         if (state == FIND):
             findCount = findCount + 1
     elif (SE[int(node[4:])] == BASIC):
@@ -334,7 +397,7 @@ def ExecConnect(request):
                 if ( x[0] == int(node[4:]) ):
                     weightOfNode = x[1]
             init = GHS_pb2.InitiateMSG(nodename= socket.gethostname(), fragmentLevel= (fragmentLevel + 1), fragmentID = weightOfNode, state = FIND)
-            r = stub.Initiate(init)     
+            stub.Initiate(init)     
 
 def ExecInitiate(request):
     global fragmentLevel
@@ -356,7 +419,13 @@ def ExecInitiate(request):
 
     print ('recieved Initiate from ' + node + ' with fragmentLevel = ' + str(fragmentLevel) + ', fragmentID = ' + str(fragmentID) + ', and state = ' + str(state) )
 
-    in_branch = (socket.gethostname(), node)
+    in_branch.append(node[4:])
+    with grpc.insecure_channel('coordinator:50050') as channel:
+        interceptors = (RetryOnRpcErrorClientInterceptor(max_attempts=100, sleeping_policy=ExponentialBackoff(init_backoff_ms=100, max_backoff_ms=1600, multiplier=2), status_for_retry=(grpc.StatusCode.UNAVAILABLE,),),)
+        intercept_channel = grpc.intercept_channel(channel, *interceptors)
+        stub = GHS_pb2_grpc.MessagingStub(intercept_channel)
+        branchMSG = GHS_pb2.BranchesMSG(nodename= socket.gethostname(), branches = in_branch)
+        stub.Branches(branchMSG)
     best_edge = None
     best_wt = INFINITY
     for x in SE:
@@ -367,11 +436,11 @@ def ExecInitiate(request):
                 intercept_channel = grpc.intercept_channel(channel, *interceptors)
                 stub = GHS_pb2_grpc.MessagingStub(intercept_channel)
                 init = GHS_pb2.InitiateMSG(nodename= socket.gethostname(), fragmentLevel= fragmentLevel, fragmentID = fragmentID, state= state)
-                r = stub.Initiate(init)
+                stub.Initiate(init)
             if (state == FIND):
                 findCount = findCount + 1
     if (state == FIND):
-        TestProc() 
+        TestProc(request) 
 
 def ExecTest(request):
     global fragmentLevel
@@ -393,26 +462,24 @@ def ExecTest(request):
         TestMSG = Message("Test", node, request)
         MsgQueue.appendleft(TestMSG)
     elif (ID != fragmentID):
-        print (socket.gethostname() + ' is attempting to ExecTest on ' + node)
         with grpc.insecure_channel(node + ':50050') as channel:
             interceptors = (RetryOnRpcErrorClientInterceptor(max_attempts=100, sleeping_policy=ExponentialBackoff(init_backoff_ms=100, max_backoff_ms=1600, multiplier=2), status_for_retry=(grpc.StatusCode.UNAVAILABLE,),),)
             intercept_channel = grpc.intercept_channel(channel, *interceptors)
             stub = GHS_pb2_grpc.MessagingStub(intercept_channel)
             accept = GHS_pb2.AcceptRejectMSG(nodename= socket.gethostname(), AorR = 0) # 0 = Accept
-            r = stub.AcceptReject(accept)
+            stub.AcceptReject(accept)
     else:
         if (SE[int(node[4:])] == BASIC):
             SE[int(node[4:])] = REJECTED
         if (test_edge[0] != int(node[4:])):
-            print('ExecTest on ' + node)
             with grpc.insecure_channel(node + ':50050') as channel:
                 interceptors = (RetryOnRpcErrorClientInterceptor(max_attempts=100, sleeping_policy=ExponentialBackoff(init_backoff_ms=100, max_backoff_ms=1600, multiplier=2), status_for_retry=(grpc.StatusCode.UNAVAILABLE,),),)
                 intercept_channel = grpc.intercept_channel(channel, *interceptors)
                 stub = GHS_pb2_grpc.MessagingStub(intercept_channel)
                 reject = GHS_pb2.AcceptRejectMSG(nodename= socket.gethostname(), AorR = 1) # 1 = Reject
-                r = stub.AcceptReject(reject)
+                stub.AcceptReject(reject)
         else:
-            TestProc() 
+            TestProc(request) 
 
 def ExecAcceptReject(request):
     global test_edge
@@ -430,16 +497,16 @@ def ExecAcceptReject(request):
     if (AorR == 0): # if Accept
         test_edge = None
         for x in edges[socket.gethostname()]:
-                if ( x[0] == int(node[4:]) ):
-                    weightOfNode = x[1]
-        if ( weightOfNode < best_wt ):
-            best_edge = (socket.gethostname(), node)
-            best_wt = weightOfNode
-        ReportProc()
+            if ( x[0] == int(node[4:]) ):
+                weightOfNode = x[1]
+                if ( weightOfNode < best_wt ):
+                    best_edge = (socket.gethostname(), node)
+                    best_wt = weightOfNode
+        ReportProc(request)
     elif (AorR == 1):
         if ( SE[int(node[4:])] == BASIC ):
             SE[int(node[4:])] = REJECTED
-        TestProc()
+        TestProc(request)
 
 def ExecReport(request):
     global in_branch
@@ -450,25 +517,29 @@ def ExecReport(request):
     global FIND
     global INFINITY
     global MsgQueue
+    global report_edge
 
     node = request.nodename
     weight = request.weight
+    edge = request.edge
 
-    #print ('recieved Report from ' + node + ' with weight = ' + str(weight))
+    print ('recieved Report from ' + node + ' with weight = ' + str(weight))
 
-    if ( (node != in_branch[0]) and (node != in_branch[1]) ):
-        findCount = findCount - 1
+    if ( str(edge[1]) not in in_branch ):
+        if ( (node[4:] not in in_branch) or (len(in_branch) > 1) ):
+            findCount = findCount - 1
         if (weight < best_wt):
             best_wt = weight
-            best_edge = (socket.gethostname, node)
-        ReportProc()
-    elif ( state == FIND ):
-        ReportMSG = Message("Report", node, request)
-        MsgQueue.appendleft(ReportMSG)
-    elif (weight > best_wt):
-        ChangeCoreProc()
-    elif ( (weight == best_wt) and (best_wt == INFINITY) ):
-        sys.exit("w = best-wt = infinity")
+            best_edge = (socket.gethostname(), node)
+            report_edge = edge
+            ReportProc(request)
+        elif ( (weight >= best_wt) and (weight != INFINITY) ):
+            ChangeCoreProc()
+        elif ( state == FIND ):
+            ReportMSG = Message("Report", node, request)
+            MsgQueue.appendleft(ReportMSG)
+        elif ( (weight == best_wt) and (best_wt == INFINITY) ):
+            sys.exit("w = best-wt = infinity")
 
 def ExecChangeCore(request):
     node = request.nodename
@@ -513,12 +584,19 @@ class GetEdges(GHS_pb2_grpc.GallagerServicer):
         state = SLEEPING
         findCount = None
         waiting_to_connect_to = None
-        in_branch= None
         best_edge = None
         best_wt = None
         test_edge = None
 
         return GHS_pb2.MsgAck(status=1, src=nodenames, dst="coordinator" )
+
+    def Finished(self, request, context):
+        global finished
+        global MsgQueue
+        print('recieved finish message')
+        MsgQueue.clear()
+        finished = True
+        return GHS_pb2.Empty()
 
 def initializeWeights(nodename):
     """Read the config file to initialize keyes"""
@@ -545,14 +623,16 @@ def initializeWeights(nodename):
 def runCoordinator():
     global numOfNodes
     global edges
+    global BranchDict
+    global finished
+    global server
 
     logging.info(f"Starting {socket.gethostname()}...")
     initializeWeights(socket.gethostname()) 
     time.sleep(10)
-    #GHS_pb2_grpc.add_MessagingServicer_to_server(Messaging(), server)
-    
 
     for x in range(0,numOfNodes):
+        BranchDict[x] = None
         neighborNodes = []
         weight = []
         for y in edges['node' + str(x)]:
@@ -571,14 +651,21 @@ def runCoordinator():
 
     time.sleep(10)
 
-    randNode = 0 #random.randint(0, numOfNodes)
+    wakeUpNode = 0 #random.randint(0, numOfNodes)
 
-    with grpc.insecure_channel('node' + str(randNode) + ':50050') as channel:
+    with grpc.insecure_channel('node' + str(wakeUpNode) + ':50050') as channel:
         interceptors = (RetryOnRpcErrorClientInterceptor(max_attempts=100, sleeping_policy=ExponentialBackoff(init_backoff_ms=100, max_backoff_ms=1600, multiplier=2), status_for_retry=(grpc.StatusCode.UNAVAILABLE,),),)
         intercept_channel = grpc.intercept_channel(channel, *interceptors)
         stub = GHS_pb2_grpc.MessagingStub(intercept_channel)
         wake = GHS_pb2.WakeUpMSG(nullMSG=0)
         empty = stub.WakeUp(wake)
+
+    GHS_pb2_grpc.add_MessagingServicer_to_server(NodeMessages(), server)
+    server.add_insecure_port('[::]:50050')
+    server.start()
+
+    while(finished == False):
+        x = 0
 
 # Run the client code
 def runNodes():
@@ -596,12 +683,12 @@ def runNodes():
     global fragmentID
     global state
     global waiting_to_connect_to
+    global server
 
-    node = grpc.server(ThreadPoolExecutor(max_workers=100))
-    GHS_pb2_grpc.add_GallagerServicer_to_server(GetEdges(), node)
-    GHS_pb2_grpc.add_MessagingServicer_to_server(NodeMessages(), node)
-    node.add_insecure_port('[::]:50050')
-    node.start()
+    GHS_pb2_grpc.add_GallagerServicer_to_server(GetEdges(), server)
+    GHS_pb2_grpc.add_MessagingServicer_to_server(NodeMessages(), server)
+    server.add_insecure_port('[::]:50050')
+    server.start()
 
     # Make sure the server has time to start up
 
@@ -619,60 +706,9 @@ def runNodes():
             if (message.msgType == "WakeUp"):
                 ExecWakeup(request = message.request)
             if (message.msgType == "Connect"):
-                WakeUpIfNeeded()
-                node = message.request.nodename
-                if(socket.gethostname() == 'node4'):
-                    print ("recieved Connect from " + node)
-                    print ('waiting_to_connect_to = ' + str(waiting_to_connect_to))
-                if (waiting_to_connect_to == int(node[4:])):
-                    fragmentLevel = 1
-                    for x in edges[socket.gethostname()]:
-                        if ( x[0] == int(node[4:]) ):
-                            weightOfNode = x[1]
-                    fragmentID = weightOfNode
-                    state = FIND
-                    SE[int(node[4:])] = BRANCH
-                    print('joined ' + node)
-                    print('fragmentLevel = ' + str(fragmentLevel))
-                    print('fragmentID = ' + str(fragmentID))
-                    print('state = ' + str(state))
-                    noFragEdge = True
-                    for x in SE:
-                        if ( (SE[x] == BRANCH) and (x != int(node[4:])) ):
-                            noFragEdge = False
-                            print ('Message Connect sending Initiate to node' + str(x))
-                            with grpc.insecure_channel('node' + str(x) + ':50050') as channel:
-                                interceptors = (RetryOnRpcErrorClientInterceptor(max_attempts=100, sleeping_policy=ExponentialBackoff(init_backoff_ms=100, max_backoff_ms=1600, multiplier=2), status_for_retry=(grpc.StatusCode.UNAVAILABLE,),),)
-                                intercept_channel = grpc.intercept_channel(channel, *interceptors)
-                                stub = GHS_pb2_grpc.MessagingStub(intercept_channel)
-                                init = GHS_pb2.InitiateMSG(nodename= socket.gethostname(), fragmentLevel= fragmentLevel, fragmentID = fragmentID, state= state)
-                                r = stub.Initiate(init)
-                    if (noFragEdge):
-                        for x in neighbor:
-                            if (x != int(node[4:])):
-                                with grpc.insecure_channel('node' + str(x) + ':50050') as channel:
-                                    interceptors = (RetryOnRpcErrorClientInterceptor(max_attempts=100, sleeping_policy=ExponentialBackoff(init_backoff_ms=100, max_backoff_ms=1600, multiplier=2), status_for_retry=(grpc.StatusCode.UNAVAILABLE,),),)
-                                    intercept_channel = grpc.intercept_channel(channel, *interceptors)
-                                    stub = GHS_pb2_grpc.MessagingStub(intercept_channel)
-                                    test = GHS_pb2.TestMSG(nodename= socket.gethostname(), fragmentLevel= fragmentLevel, fragmentID = fragmentID)
-                                    r = stub.Test(test)
-                else: ExecConnect(request = message.request)
+                ExecConnect(request = message.request)
             if (message.msgType == "Initiate"):
-                node = message.request.nodename
-                level = message.request.fragmentLevel
-                ID = message.request.fragmentID
-                reqState = message.request.state
-                if (waiting_to_connect_to == int(node[4:])) and (fragmentID != ID):
-                    fragmentLevel = level
-                    fragmentID = ID
-                    state = FOUND
-                    SE[int(node[4:])] = BRANCH
-                    print('joined ' + node)
-                    print('fragmentLevel = ' + str(fragmentLevel))
-                    print('fragmentID = ' + str(fragmentID))
-                    print('state = ' + str(state))
-                    TestProc()
-                else: ExecInitiate(request = message.request)
+                ExecInitiate(request = message.request)
             if (message.msgType == "Test"):
                 ExecTest(request = message.request)
             if (message.msgType == "AcceptReject"):
@@ -681,12 +717,7 @@ def runNodes():
                 ExecReport(request = message.request)
             if (message.msgType == "ChangeCore"):
                 ExecChangeCore(request = message.request)
-
-        hasBasicEdge = False
-        for x in SE:
-            if (SE[x] == BASIC):
-                hasBasicEdge = True
-        
+    print ("Finished!")
 
 
 if __name__ == '__main__':
