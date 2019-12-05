@@ -2,6 +2,8 @@
 
 https://github.com/Coltux/OSProjectAlpha.git
 
+Video of project running: https://drive.google.com/open?id=1FMnakkN1DruGaKffjCNrLzEY7LAjv84A
+
 This project deals with setting up any number of nodes, and a coordinator using Docker-Compose, and then using GRPC and Protocol Buffers in order to handle remote procedure calls between all of them. The objective of this project is to create a system that will implement the GHS algorithm. This is a distributed algorithm that finds the minimum weight spanning tree of a set of nodes. 
 
 ## Installation
