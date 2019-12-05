@@ -35,5 +35,11 @@ can be used to shut down the program from the terminal. Alternatively Ctrl+C can
 
 the output of the program is a list of branch edges for each node. This can be used to generate the tree and to determine that the algorithm executed correctly. 
 
+example output:
+
+```
+coordinator | BranchDict = {0: ['1', '5'], 1: ['0'], 2: ['3'], 3: ['4', '2'], 4: ['5', '3'], 5: ['4', '0']}
+```
+
 ## Collaborators
 A file will be found in the project directory that will list all the resources and collaboration used. 
